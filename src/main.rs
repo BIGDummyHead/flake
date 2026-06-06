@@ -1,23 +1,40 @@
 use std::rc::Rc;
 
+use flake::{App, input};
 use sdl3::video::{WindowBuildError, WindowBuilder, WindowFlags};
 
 fn main() {
     // create a reference to the initialized SDL
-    let sdl_instance = sdl3::init().expect("failed to init sdl");
+    let mut app = App::create("Video Game Title", 600, |win| {
+        win.position_centered().resizable();
+    })
+    .expect("could not create application instance");
 
-    let video_subsystem = sdl_instance
-        .video()
-        .expect("video subsystem failed to initialize");
+    loop {
+        app.poll_events();
 
-    let title = "Video Game Title";
-    let size = 600;
-    let window = video_subsystem
-        .window(title, size, size)
-        .position_centered()
-        .resizable()
-        .build()
-        .expect("failed to create window");
+        if input::keys::is_down(sdl3::keyboard::Keycode::A) {
+            println!("Down");
+        }
 
-    let window_canvas = window.into_canvas();
+        if input::keys::is_held(sdl3::keyboard::Keycode::A) {
+            println!("Held");
+        }
+
+        if input::keys::is_up(sdl3::keyboard::Keycode::A) {
+            println!("Up");
+        }
+
+        if input::keys::is_released(sdl3::keyboard::Keycode::A) {
+            println!("Re");
+        }
+
+        if input::keys::is_down(sdl3::keyboard::Keycode::D) {
+            break;
+        }
+
+        flake::input::end_frame();
+
+        app.frame_sleep();
+    }
 }

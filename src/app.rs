@@ -4,6 +4,7 @@ use std::{
         atomic::{AtomicBool, AtomicI32, AtomicI64, Ordering},
     },
     thread::{self, Thread, ThreadId},
+    time::Duration,
 };
 
 use sdl3::{
@@ -12,6 +13,12 @@ use sdl3::{
     render::Canvas,
     video::{Window, WindowBuildError, WindowBuilder},
 };
+
+mod settings;
+
+pub use settings::Settings;
+
+use crate::input::{InputType, update_state};
 
 // THIS IS NOT SHARED BETWEEN THREADS
 // HOWEVER IT IMPLEMENTS SEND AND SYNC FOR REASONS OF STATIC USE ON THE MAIN THREAD!
@@ -64,6 +71,7 @@ pub struct App {
     video: VideoSubsystem,
     input: EventPump,
     canvas: Canvas<Window>,
+    settings: Settings,
 }
 
 impl App {
@@ -92,6 +100,7 @@ impl App {
             video,
             input,
             canvas,
+            settings: Settings::default(),
         })
     }
 
@@ -113,7 +122,63 @@ impl App {
 
     fn handle_event(event: Event) -> () {
         match event {
-            _ => todo!(),
+            Event::KeyDown {
+                keycode: Some(keycode),
+                repeat,
+                ..
+            } => {
+                if !repeat {
+                    update_state(InputType::Key(keycode), true);
+                }
+            }
+            Event::KeyUp {
+                keycode: Some(keycode),
+                repeat,
+                ..
+            } => {
+                if !repeat {
+                    update_state(InputType::Key(keycode), false);
+                }
+            }
+
+            Event::MouseMotion { x, y, .. } => {}
+            Event::MouseButtonDown { mouse_btn, .. } => {
+                update_state(InputType::Mouse(mouse_btn), true);
+            }
+
+            Event::MouseButtonUp { mouse_btn, .. } => {
+                update_state(InputType::Mouse(mouse_btn), false);
+            }
+
+            Event::MouseWheel {
+                x, y, direction, ..
+            } => todo!(),
+            _ => {}
         }
+    }
+
+    /// App settings reference (mut)
+    pub fn settings_mut(&mut self) -> &mut Settings {
+        &mut self.settings
+    }
+
+    /// App settings reference
+    pub fn settings(&self) -> &Settings {
+        &self.settings
+    }
+
+    /// Sleeps for the given frame settings for this thread.
+    pub fn frame_sleep(&self) -> () {
+        thread::sleep(Duration::new(0, 1_000_000_000u32 / self.settings().fps));
+    }
+
+    /// A reference to the canvas that was created for the window (mut).
+    pub fn canvas_mut(&mut self) -> &mut Canvas<Window> {
+        &mut self.canvas
+    }
+
+    /// A reference to the canvas that was created for the window.
+    pub fn canvas(&self) -> &Canvas<Window> {
+        &self.canvas
     }
 }
