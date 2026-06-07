@@ -1,9 +1,6 @@
 use std::{
-    sync::{
-        LazyLock, Once, OnceLock,
-        atomic::{AtomicBool, AtomicI32, AtomicI64, Ordering},
-    },
-    thread::{self, Thread, ThreadId},
+    sync::OnceLock,
+    thread::{self, ThreadId},
     time::Duration,
 };
 
@@ -11,7 +8,7 @@ use sdl3::{
     EventPump, Sdl, VideoSubsystem,
     event::Event,
     render::Canvas,
-    video::{Window, WindowBuildError, WindowBuilder},
+    video::{Window, WindowBuilder},
 };
 
 mod settings;
@@ -19,7 +16,11 @@ mod settings;
 pub use settings::Settings;
 
 use crate::{
-    input::{InputType, update_state},
+    input::{
+        InputType,
+        mouse::{Scroll, invoke_scroll_event},
+        update_state,
+    },
     math::Vec2,
 };
 
@@ -157,7 +158,14 @@ impl App {
 
             Event::MouseWheel {
                 x, y, direction, ..
-            } => todo!(),
+            } => {
+                let scroll = Scroll {
+                    distance_x: x,
+                    distance_y: y,
+                    direction,
+                };
+                invoke_scroll_event(scroll);
+            }
             _ => {}
         }
     }
