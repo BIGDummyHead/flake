@@ -1,6 +1,14 @@
+use std::sync::{LazyLock, Mutex, RwLock};
+
 use sdl3::mouse::MouseButton;
 
-use crate::{input::{InputState, input_state::InputType}, math::Vec2};
+use crate::{
+    input::{InputState, input_state::InputType},
+    math::Vec2,
+};
+
+mod scroll;
+pub use scroll::Scroll;
 
 /// The current mouse_button's internal state.
 pub fn mouse_state(mouse_button: MouseButton) -> InputState {
@@ -36,7 +44,23 @@ pub fn is_released(mouse_button: MouseButton) -> bool {
     matches!(state, InputState::Released)
 }
 
+static MOUSE_POSITION: LazyLock<RwLock<Vec2>> = LazyLock::new(|| RwLock::new(Vec2::default()));
+
 /// The position of the mouse
 pub fn position() -> Vec2 {
-    todo!()
+    let pos = MOUSE_POSITION
+        .read()
+        .expect("failed to read mouse position: ");
+
+    *pos
 }
+
+/// Sets the position of the global mouse.
+pub(crate) fn set_position(pos: Vec2) -> () {
+    *MOUSE_POSITION
+        .write()
+        .expect("faile to write to mouse position: ") = pos;
+}
+
+
+pub fn on_scroll(scroll_event: impl Fn(Scroll))

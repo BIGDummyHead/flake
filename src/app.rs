@@ -18,7 +18,10 @@ mod settings;
 
 pub use settings::Settings;
 
-use crate::input::{InputType, update_state};
+use crate::{
+    input::{InputType, update_state},
+    math::Vec2,
+};
 
 // THIS IS NOT SHARED BETWEEN THREADS
 // HOWEVER IT IMPLEMENTS SEND AND SYNC FOR REASONS OF STATIC USE ON THE MAIN THREAD!
@@ -141,7 +144,9 @@ impl App {
                 }
             }
 
-            Event::MouseMotion { x, y, .. } => {}
+            Event::MouseMotion { x, y, .. } => {
+                crate::input::mouse::set_position(Vec2::new(x, y));
+            }
             Event::MouseButtonDown { mouse_btn, .. } => {
                 update_state(InputType::Mouse(mouse_btn), true);
             }

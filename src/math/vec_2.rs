@@ -1,6 +1,6 @@
 use std::ops::{Add, Div, Mul, Sub};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Vec2 {
     x: f32,
     y: f32,
@@ -9,7 +9,7 @@ pub struct Vec2 {
 impl Vec2 {
     /// # New
     ///
-    /// Creates a new 2D Vector.`
+    /// Creates a new 2D Vector.
     pub fn new(x: f32, y: f32) -> Self {
         Vec2 { x, y }
     }
