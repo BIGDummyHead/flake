@@ -1,8 +1,9 @@
-use std::sync::{LazyLock, Mutex, RwLock};
+use std::sync::{LazyLock, RwLock};
 
 use sdl3::mouse::MouseButton;
 
 use crate::{
+    events::{Event, EventKey},
     input::{InputState, input_state::InputType},
     math::Vec2,
 };
@@ -62,5 +63,46 @@ pub(crate) fn set_position(pos: Vec2) -> () {
         .expect("faile to write to mouse position: ") = pos;
 }
 
+static SCROLL_EVENT: LazyLock<RwLock<Event<Box<dyn Fn(&Scroll) + Send + Sync + 'static>, Scroll>>> =
+    LazyLock::new(|| RwLock::new(Event::empty()));
 
-pub fn on_scroll(scroll_event: impl Fn(Scroll))
+/// # On Scroll
+///
+/// Passed function is called whenever a scroll is detected.
+///
+/// ## Returns
+///
+/// An event key that must be used if you wish to remove the scroll event later.
+#[must_use]
+pub fn on_scroll(scroll_event: impl Fn(&Scroll) + Send + Sync + 'static) -> EventKey {
+    let event: Box<dyn Fn(&Scroll) + Send + Sync + 'static> = Box::new(scroll_event);
+    SCROLL_EVENT
+        .write()
+        .expect("could not add event: ")
+        .add(event)
+}
+
+/// # Remove Scroll Event
+///
+/// Removes the scroll event from the event key
+///
+/// ## Returns
+///
+/// True if the event existed
+///
+/// False if the event did not exist
+pub fn remove_scroll_event(key: EventKey) -> bool {
+    SCROLL_EVENT
+        .write()
+        .expect("could not write")
+        .remove(key)
+        .is_some()
+}
+
+/// Invokes the scroll events
+pub(crate) fn invoke_scroll_event(scroll_info: Scroll) -> () {
+    SCROLL_EVENT
+        .read()
+        .expect("failed to invoke scroll events")
+        .invoke(&scroll_info);
+}

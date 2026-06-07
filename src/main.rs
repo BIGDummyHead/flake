@@ -1,7 +1,5 @@
-use std::rc::Rc;
-
-use flake::{App, input};
-use sdl3::video::{WindowBuildError, WindowBuilder, WindowFlags};
+use flake::App;
+use sdl3::{keyboard::Keycode, pixels::Color};
 
 fn main() {
     // create a reference to the initialized SDL
@@ -10,29 +8,24 @@ fn main() {
     })
     .expect("could not create application instance");
 
-    loop {
+    'running: loop {
         app.poll_events();
 
-        if input::keys::is_down(sdl3::keyboard::Keycode::A) {
-            println!("Down");
+        {
+            let canvas = app.canvas_mut();
+            canvas.set_draw_color(Color::RGB(0, 0, 0));
+            canvas.clear();
         }
 
-        if input::keys::is_held(sdl3::keyboard::Keycode::A) {
-            println!("Held");
+        // START GAME CODE
+
+        if flake::input::keys::is_down(Keycode::D) {
+            break 'running;
         }
 
-        if input::keys::is_up(sdl3::keyboard::Keycode::A) {
-            println!("Up");
-        }
+        // END GAME CODE
 
-        if input::keys::is_released(sdl3::keyboard::Keycode::A) {
-            println!("Re");
-        }
-
-        if input::keys::is_down(sdl3::keyboard::Keycode::D) {
-            break;
-        }
-
+        app.canvas_mut().present();
         flake::input::end_frame();
 
         app.frame_sleep();
