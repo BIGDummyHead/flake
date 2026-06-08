@@ -3,6 +3,7 @@ use std::sync::{LazyLock, RwLock};
 use sdl3::mouse::MouseButton;
 
 use crate::{
+    event_type,
     events::{Event, EventKey},
     input::{InputState, input_state::InputType},
     math::Vec2,
@@ -63,7 +64,7 @@ pub(crate) fn set_position(pos: Vec2) -> () {
         .expect("faile to write to mouse position: ") = pos;
 }
 
-static SCROLL_EVENT: LazyLock<RwLock<Event<Box<dyn Fn(&Scroll) + Send + Sync + 'static>, Scroll>>> =
+static SCROLL_EVENT: LazyLock<RwLock<event_type!(Scroll, TSafe)>> =
     LazyLock::new(|| RwLock::new(Event::empty()));
 
 /// # On Scroll
@@ -75,7 +76,7 @@ static SCROLL_EVENT: LazyLock<RwLock<Event<Box<dyn Fn(&Scroll) + Send + Sync + '
 /// An event key that must be used if you wish to remove the scroll event later.
 #[must_use]
 pub fn on_scroll(scroll_event: impl Fn(&Scroll) + Send + Sync + 'static) -> EventKey {
-    let event: Box<dyn Fn(&Scroll) + Send + Sync + 'static> = Box::new(scroll_event);
+    let event = Box::new(scroll_event);
     SCROLL_EVENT
         .write()
         .expect("could not add event: ")
