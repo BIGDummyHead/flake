@@ -1,9 +1,9 @@
-use flake::App;
+use flake::Game;
 use sdl3::{keyboard::Keycode, pixels::Color};
 
 fn main() {
     // create a reference to the initialized SDL
-    let mut app = App::create("Video Game Title", 600, |win| {
+    let mut app = Game::create("Video Game Title", 600, |win| {
         win.position_centered().resizable();
     })
     .expect("could not create application instance");

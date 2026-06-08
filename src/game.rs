@@ -66,19 +66,19 @@ fn sdl_instance() -> &'static Sdl {
     }
 }
 
-/// # App
+/// # Game
 ///
 /// Represents an application for handling video and events.
 ///
 /// Only one instance should ever be created
-pub struct App {
+pub struct Game {
     video: VideoSubsystem,
     input: EventPump,
     canvas: Canvas<Window>,
     settings: Settings,
 }
 
-impl App {
+impl Game {
     /// # Create
     ///
     /// Creates a new application.

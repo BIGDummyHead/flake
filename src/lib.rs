@@ -1,6 +1,6 @@
-mod app;
+mod game;
 
 pub mod events;
-pub use app::App;
+pub use game::Game;
 pub mod input;
 pub mod math;
