@@ -11,6 +11,15 @@ use sdl3::{
     video::{Window, WindowBuilder},
 };
 
+pub mod game_object;
+pub mod texture;
+
+mod object_manager;
+mod transform;
+
+use object_manager::ObjectManager;
+pub use transform::Transform;
+
 mod settings;
 
 pub use settings::Settings;
