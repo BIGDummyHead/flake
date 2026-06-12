@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
-    sync::{LazyLock, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    rc::Rc,
+    sync::{Arc, LazyLock, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 use rayon::{
@@ -11,24 +12,24 @@ use rayon::{
 };
 use sdl3::keyboard::Scancode::Mute;
 
-use crate::game::game_object::GameObject;
+use crate::game::game_object::{GameObject, GameObjectHandle};
 
 pub type GameObjectId = u128;
 
 static GAMEOBJECT_ID_TRACKER: LazyLock<Mutex<GameObjectId>> = LazyLock::new(|| Mutex::new(0));
 
 static GAMEOBJECT_MANAGER: LazyLock<RwLock<ObjectManager>> =
-    LazyLock::new(|| RwLock::new(ObjectManager::default()));
+    LazyLock::new(|| RwLock::new(ObjectManager::new()));
 
 /// The object manager
-pub(crate) fn object_manager<'go>() -> RwLockReadGuard<'go, ObjectManager> {
+pub fn object_manager<'go>() -> RwLockReadGuard<'go, ObjectManager> {
     GAMEOBJECT_MANAGER
         .read()
         .expect("failed to obtain game object manager")
 }
 
 /// The mut object manager
-pub(crate) fn object_manager_mut<'go>() -> RwLockWriteGuard<'go, ObjectManager> {
+pub fn object_manager_mut<'go>() -> RwLockWriteGuard<'go, ObjectManager> {
     GAMEOBJECT_MANAGER
         .write()
         .expect("failed to obtain game object write manager")
@@ -36,14 +37,6 @@ pub(crate) fn object_manager_mut<'go>() -> RwLockWriteGuard<'go, ObjectManager> 
 
 pub struct ObjectManager {
     objects: HashMap<GameObjectId, GameObject>,
-}
-
-impl Default for ObjectManager {
-    fn default() -> Self {
-        Self {
-            objects: HashMap::default(),
-        }
-    }
 }
 
 /// Generates a Game Object id and increments to a new unique ID
@@ -56,12 +49,24 @@ fn generate_go_id() -> GameObjectId {
 }
 
 impl ObjectManager {
-    pub fn insert(&mut self, game_object: GameObject) -> &mut GameObject {
+    pub(crate) fn new() -> Self {
+        Self {
+            objects: HashMap::default(),
+        }
+    }
+
+    /// # Insert
+    ///
+    /// Inserts an object into the game object manager.
+    ///
+    /// Automatically generates an ID for the game object, sets it, and adds it to the manager.
+    ///
+    /// Returns a mut reference to the inserted variable.
+    pub fn insert<'g>(&'g mut self, game_object: GameObject) -> GameObjectHandle {
         let id = generate_go_id();
         self.objects.insert(id, game_object);
 
-        // acceptable unwrap here
-        self.objects.get_mut(&id).unwrap()
+        GameObjectHandle::from_object(id)
     }
 
     /// # Objects
@@ -110,5 +115,11 @@ impl ObjectManager {
     /// A reference to the gameobject (mut)
     pub fn find_by_id_mut(&mut self, id: GameObjectId) -> Option<&mut GameObject> {
         self.objects.get_mut(&id)
+    }
+
+    pub(crate) fn remove(&mut self, id: GameObjectId) -> () {
+        if let Some(mut object) = self.objects.remove(&id) {
+            todo!()
+        }
     }
 }

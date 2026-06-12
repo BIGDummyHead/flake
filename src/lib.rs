@@ -1,6 +1,4 @@
-mod game;
-
 pub mod events;
-pub use game::Game;
+pub mod game;
 pub mod input;
 pub mod math;

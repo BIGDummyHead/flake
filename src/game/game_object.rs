@@ -1,15 +1,21 @@
 use std::{
     any::{Any, TypeId},
     collections::HashMap,
+    sync::{Arc, RwLockWriteGuard},
 };
 
 use crate::game::{
     Transform,
-    object_manager::{GameObjectId, object_manager_mut},
+    object_manager::{GameObjectId, ObjectManager, object_manager_mut},
     texture::Texture,
 };
 
 mod component;
+mod game_object_handle;
+mod game_object_state;
+
+pub use game_object_handle::GameObjectHandle;
+pub(crate) use game_object_state::GameObjectState;
 
 pub use component::Component;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator};
@@ -23,23 +29,68 @@ pub struct GameObject {
     transform: Transform,
     components: HashMap<TypeId, Box<dyn Component + Send + Sync>>,
     texture: Option<Box<dyn Texture + Send + Sync>>,
+    state: GameObjectState,
 }
 
 impl GameObject {
-    pub fn new<'go>(name: String, transform: Option<Transform>) -> &'go mut GameObject {
-        let object = Self {
-            name,
+    pub fn new(name: impl Into<String>, transform: Option<Transform>) -> GameObjectHandle {
+        let game_object = Self {
+            name: name.into(),
             transform: transform.unwrap_or_default(),
             id: 0,
             components: HashMap::default(),
             texture: None,
+            state: GameObjectState::Awake,
         };
 
-        todo!()
+        object_manager_mut().insert(game_object)
     }
 }
 
 impl GameObject {
+    pub fn poll(&mut self) -> () {
+        let components = std::mem::take(&mut self.components);
+
+        for (_, component) in &components {
+            match &self.state {
+                GameObjectState::Awake => {
+                    component.awake(self);
+                }
+                GameObjectState::Start => {
+                    component.start(self);
+                }
+                GameObjectState::Ready => {
+                    component.update(self);
+                }
+                GameObjectState::Removing => {
+                    component.remove(self);
+                }
+            }
+        }
+
+        if !matches!(self.state, GameObjectState::Removing) {
+            // re-take the components before overwriting them
+            let addt_components = std::mem::take(&mut self.components);
+
+            self.components = components;
+
+            // take the additional and add upon
+            for (c_key, c) in addt_components {
+                if let None = self.components.get(&c_key) {
+                    self.components.insert(c_key, c);
+                }
+            }
+        }
+
+        // moves the state forward
+        self.state = self.state.clone().move_state();
+    }
+
+    /// Forces the state of the game object for the next poll.
+    pub(crate) fn force_state(&mut self, state: GameObjectState) -> () {
+        self.state = state;
+    }
+
     pub fn id(&self) -> GameObjectId {
         self.id
     }
@@ -71,6 +122,24 @@ impl GameObject {
         C: Component + Send + Sync + 'static,
     {
         self.components.remove(&c.type_id());
+    }
+
+    pub fn get_component<C>(&self) -> Option<&(dyn Component + Send + Sync)>
+    where
+        C: Component + Send + Sync + Sized + 'static,
+    {
+        let id = TypeId::of::<C>();
+
+        self.components.get(&id).map(|c| c.as_ref())
+    }
+
+    pub fn get_component_mut<C>(&mut self) -> Option<&mut (dyn Component + Send + Sync + 'static)>
+    where
+        C: Component + Send + Sync + Sized + 'static,
+    {
+        let id = TypeId::of::<C>();
+
+        self.components.get_mut(&id).map(|c| c.as_mut())
     }
 
     /// # Set Texture
@@ -109,5 +178,11 @@ impl GameObject {
     /// The transform (positional information) of the game object.
     pub fn transform_mut(&mut self) -> &mut Transform {
         &mut self.transform
+    }
+
+    pub fn destroy(&mut self) -> () {
+        self.force_state(GameObjectState::Removing);
+        self.poll();
+        object_manager_mut().remove(self.id());
     }
 }

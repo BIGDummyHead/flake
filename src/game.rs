@@ -17,7 +17,7 @@ pub mod texture;
 mod object_manager;
 mod transform;
 
-use object_manager::ObjectManager;
+pub use object_manager::*;
 pub use transform::Transform;
 
 mod settings;

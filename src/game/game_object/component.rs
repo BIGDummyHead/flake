@@ -1,4 +1,4 @@
-use crate::{Game, game::game_object::GameObject};
+use crate::game::game_object::GameObject;
 
 /// # Component
 ///
@@ -28,4 +28,9 @@ pub trait Component {
     ///
     /// Called each frame of the game object.
     fn update(&self, go: &mut GameObject);
+
+    /// # Remove
+    ///
+    /// Called once the component is removed from a game object.
+    fn remove(&self, go: &mut GameObject);
 }
